@@ -14,6 +14,7 @@ app.config['MYSQL_DB'] = os.environ.get('DB_DATABASE')
 
 mysql = MySQL(app)
 
+
 @app.route('/')
 def home():
     return "Success"
@@ -25,9 +26,9 @@ def register():
     password = data['password']
     result = "False"
     cur = mysql.connection.cursor()
-    cur.execute("select username from users where username = '" + username + "'")
+    cur.execute("select username from users where username = '"+username+"'")
     userres = cur.fetchone()
-    cur.execute("select password from users where password = '" + password + "'")
+    cur.execute("select password from users where password = '"+password+"'")
     passwordres = cur.fetchone()
     if(userres is not None or passwordres is not None):
         result = "True"
@@ -39,17 +40,18 @@ def register():
 
 @app.route("/login",methods=["POST"])
 def login():
+    print(type(request))
     data = request.get_json()
     username = data['username']
     password = data['password']
     result = "False"
     cur = mysql.connection.cursor()
-    cur.execute("select username from users where username = '" + username + "' and password = '" + password + "' ")
+    cur.execute("select username from users where username = %s and password = %s",(username,password))
     res = cur.fetchone()
     if(res is not None):
         result = "True"
     cur.close()
-    return jsonify({'result':result})
+    return {'result':result}
 
 @app.route("/url",methods=['POST'])
 def url():
@@ -58,15 +60,15 @@ def url():
     url = data['url']
     nickname = data['nickname']
     cur = mysql.connection.cursor()
-    cur.execute("select username,org_url from url where username = '" + username + "' and org_url = '" + url + "' ")
+    cur.execute("select username,org_url from url where username = %s and org_url = %s",(username,url))
     res = cur.fetchone()
     print(res)
     exists = "False"
     if(res is not None):
-        cur.execute("select short_url from url where username = '" + username + "' and org_url = '" + url + "' ")
+        cur.execute("select short_url from url where username = %s and org_url = %s",(username,url))
         result = cur.fetchone()[0]
     else:
-        cur.execute("select nickname from url where username = '" + username +"' and nickname ='" + nickname + "' ")
+        cur.execute("select nickname from url where username = %s and nickname = %s ",(username,nickname))
         nickres = cur.fetchone()
         print(nickres)
         if(nickres is not None):
@@ -77,7 +79,7 @@ def url():
             cur.execute("insert into url(username, org_url, nickname, short_url) values(%s, %s, %s, %s)",(username, url, nickname, result))
             mysql.connection.commit()
     cur.close()
-    return jsonify({'host':os.environ.get('FLASK_HOST')+result , 'exists':exists})
+    return {'host':os.environ.get('FLASK_HOST')+result , 'exists':exists}
 
 @app.route("/<username>/<nickname>",methods=['GET'])
 def route(username,nickname):
@@ -85,6 +87,7 @@ def route(username,nickname):
     cur.execute("select org_url from url where username = '" + username + "' and nickname = '" + nickname +"' ")
     res = cur.fetchone()
     print(res)
+    cur.close()
     return redirect(res[0])
 
 
