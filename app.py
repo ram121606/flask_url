@@ -26,9 +26,9 @@ def register():
     password = data['password']
     result = "False"
     cur = mysql.connection.cursor()
-    cur.execute("select username from users where username = '"+username+"'")
+    cur.execute("select username from users where username = %s",(username,))
     userres = cur.fetchone()
-    cur.execute("select password from users where password = '"+password+"'")
+    cur.execute("select password from users where password = %s",(password,))
     passwordres = cur.fetchone()
     if(userres is not None or passwordres is not None):
         result = "True"
@@ -36,7 +36,7 @@ def register():
         cur.execute("insert into users(username, password) values(%s, %s)",(username,password))
         mysql.connection.commit()
     cur.close()
-    return jsonify({'result':result})
+    return {'result':result}
 
 @app.route("/login",methods=["POST"])
 def login():
@@ -84,11 +84,19 @@ def url():
 @app.route("/<username>/<nickname>",methods=['GET'])
 def route(username,nickname):
     cur = mysql.connection.cursor()
-    cur.execute("select org_url from url where username = '" + username + "' and nickname = '" + nickname +"' ")
+    cur.execute("select org_url from url where username = %s and nickname = %s",(username,nickname,))
     res = cur.fetchone()
     print(res)
     cur.close()
     return redirect(res[0])
+
+@app.route("/details/<username>")
+def deatisl(username):
+    cur = mysql.connection.cursor()
+    print(username)
+    cur.execute("select short_url,org_url from url where username = %s",(username,))
+    res = cur.fetchall()
+    return {'result':res}
 
 
 if __name__ == "__main__":
